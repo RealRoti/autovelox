@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open Source Autovelox Map Italia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #003366; 
+            --accent: #0056b3;
+            --bg: #f8f9fa;
+            --text: #212529;
+            --border: #dee2e6;
+        }
+
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; }
+        
+        /* HEADER */
+        header { background: white; border-bottom: 1px solid var(--border); padding: 20px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .header-content { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+        .logos { display: flex; gap: 20px; align-items: center; }
+        .logo-img { height: 50px; filter: grayscale(100%) opacity(0.8); transition: filter 0.3s; }
+        .logo-img:hover { filter: grayscale(0%) opacity(1); }
+        .titles h1 { font-size: 1.4rem; margin: 0; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .titles p { margin: 2px 0 0; font-size: 0.85rem; color: #666; }
+
+        /* MAIN CONTAINER */
+        .container { max-width: 900px; margin: 30px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 15px rgba(0,0,0,0.03); flex: 1; }
+
+        /* TABS */
+        .tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 25px; }
+        .tab { padding: 12px 25px; cursor: pointer; font-weight: 600; color: #adb5bd; transition: color 0.2s; position: relative; bottom: -2px; }
+        .tab:hover { color: var(--primary); }
+        .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+        /* CONTROLS (SEARCH + FILTER) */
+        .controls { display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; }
+        .search-box { flex: 2; padding: 12px 15px; font-size: 1rem; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+        .filter-box { flex: 1; padding: 12px 15px; font-size: 1rem; border: 1px solid var(--border); border-radius: 6px; background: #fff; min-width: 150px; }
+        .search-box:focus, .filter-box:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,86,179,0.1); }
+
+        /* WELCOME STATE */
+        #welcome-screen { text-align: center; padding: 40px 20px; color: #6c757d; }
+        #welcome-screen img { width: 150px; margin-bottom: 20px; }
+        #welcome-screen h3 { color: var(--primary); margin-bottom: 10px; }
+
+        /* RESULTS LIST */
+        .card { border: 1px solid var(--border); border-radius: 6px; padding: 18px; margin-bottom: 15px; transition: transform 0.15s, box-shadow 0.15s; background: white; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        
+        .card.has-velox { border-left: 4px solid #dc3545; } /* Rosso */
+        .card.no-velox { border-left: 4px solid #28a745; opacity: 0.8; } /* Verde */
+        .card.other-entity { border-left: 4px solid #007bff; } /* Blu */
+
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .city-name { font-size: 1.1rem; font-weight: 700; color: #333; }
+        .prov-tag { font-size: 0.8rem; background: #e9ecef; color: #495057; padding: 2px 6px; border-radius: 4px; margin-left: 8px; vertical-align: middle; }
+        
+        .badge { padding: 4px 10px; border-radius: 50px; font-size: 0.75rem; color: white; font-weight: 600; white-space: nowrap; }
+        .bg-red { background-color: #dc3545; }
+        .bg-green { background-color: #28a745; }
+        .bg-blue { background-color: #007bff; }
+        
+        .velox-list { list-style: none; padding: 0; margin-top: 15px; border-top: 1px dashed var(--border); }
+        .velox-item { padding: 10px 0; border-bottom: 1px solid #f1f3f5; font-size: 0.9rem; line-height: 1.5; }
+        .velox-item:last-child { border-bottom: none; }
+        .velox-model { font-weight: 600; color: #495057; display: block; }
+        .velox-meta { color: #868e96; font-size: 0.85rem; }
+        .note-text { color: #dc3545; font-style: italic; display: block; margin-top: 3px; font-size: 0.85rem; }
+
+        /* FOOTER */
+        footer { background: #343a40; color: #adb5bd; padding: 40px 0; margin-top: auto; font-size: 0.9rem; }
+        .footer-content { max-width: 900px; margin: 0 auto; padding: 0 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        footer a { color: #fff; text-decoration: none; border-bottom: 1px dotted #adb5bd; }
+        footer a:hover { color: #61dafb; border-bottom-style: solid; }
+        .disclaimer { font-size: 0.8rem; color: #6c757d; margin-top: 20px; grid-column: 1 / -1; border-top: 1px solid #495057; padding-top: 20px; }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 600px) {
+            .header-content { flex-direction: column; text-align: center; gap: 15px; }
+            .controls { flex-direction: column; }
+            .footer-content { grid-template-columns: 1fr; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-content">
+        <div class="logos">
+            <img src="https://www.concur.it/sites/default/files/it/mit_logo.png" alt="Repubblica Italiana" class="logo-img">
+            <img src="https://procura-forli.giustizia.it/cmsresources/cms/images/Polizia-Logo4_d0.png" alt="Polizia di Stato" class="logo-img" style="height: 45px;">
+        </div>
+        <div class="titles">
+            <h1>Autovelox Italiani Open Source</h1>
+            <p>Elenco nazionale dispositivi di rilevamento omologati</p>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+    
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('comuni')">Comuni Italiani</div>
+        <div class="tab" onclick="switchTab('enti')">Altri Enti / Polizia</div>
+    </div>
+
+    <div class="controls">
+        <input type="text" id="searchInput" class="search-box" placeholder="Cerca comune o codice catastale..." onkeyup="handleSearch()">
+        
+        <select id="provFilter" class="filter-box" onchange="handleSearch()">
+            <option value="">Tutte le province</option>
+            </select>
+    </div>
+
+    <div id="welcome-screen">
+        <img src="img/italia-comuni.png" alt="Mappa Italia">
+        <h3>Archivio Nazionale Autovelox</h3>
+        <p>Inserisci il nome di un comune o seleziona una provincia per visualizzare i dispositivi installati.</p>
+        <p style="font-size: 0.8rem; color:#adb5bd; margin-top:10px" id="stats-text">Caricamento database...</p>
+    </div>
+
+    <div id="list-comuni" class="hidden"></div>
+    <div id="list-enti" class="hidden"></div>
+</div>
+
+<footer>
+    <div class="footer-content">
+        <div>
+            <strong>Realizzato da RealRoti</strong><br>
+            <span style="font-size:0.85em">per tutti i cittadini italiani.</span><br><br>
+            <a href="https://github.com/realroti/autovelox" target="_blank">Repo Github</a>
+        </div>
+        <div style="text-align: right;">
+            Dati aggiornati al <strong>29/11/2025</strong><br>
+            Fonte: <a href="https://velox.mit.gov.it/dispositivi" target="_blank">Ministero delle Infrastrutture e dei Trasporti</a><br>
+            <span style="font-size:0.85em">Censimento Pubblico Nazionale</span>
+        </div>
+        <div class="disclaimer">
+            Nota legale: Questo sito permette di accedere, tramite una comoda interfaccia grafica, ai dati pubblici del Censimento del Ministero dei Trasporti, previsto dal Decreto del Direttore Generale per la motorizzazione n.367 del 29/09/2025 (art. 1 commi 3,4). Il sito web non è mantenuto da una istituzione ufficiale, bensì da un privato cittadino, e l'utilizzo dei relativi loghi istituzionali è a puro scopo indicativo.
+        </div>
+    </div>
+</footer>
+
+<script>
+    let rawData = null;
+    let currentTab = 'comuni';
+
+    // Caricamento dati
+    fetch('velox.json')
+        .then(response => {
+            if (!response.ok) throw new Error("Errore lettura JSON");
+            return response.json();
+        })
+        .then(data => {
+            rawData = data;
+            document.getElementById('stats-text').innerText = `Database caricato: ${data.metadata.totale_velox} dispositivi censiti.`;
+            populateProvinces();
+        })
+        .catch(err => {
+            document.getElementById('welcome-screen').innerHTML = `<h3 style="color:red">Errore di caricamento</h3>`;
+        });
+
+    function populateProvinces() {
+        if (!rawData) return;
+        const select = document.getElementById('provFilter');
+        
+        // Estrae province uniche, rimuove ND, ordina alfabeticamente
+        const provs = [...new Set(rawData.comuni.map(c => c.prov))].filter(p => p && p !== 'ND').sort();
+        
+        provs.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p;
+            opt.innerText = p;
+            select.appendChild(opt);
+        });
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        
+        // UI Tabs
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        const activeIdx = tab === 'comuni' ? 0 : 1;
+        document.querySelectorAll('.tab')[activeIdx].classList.add('active');
+
+        // UI Controls
+        const searchInput = document.getElementById('searchInput');
+        const provFilter = document.getElementById('provFilter');
+
+        if (tab === 'comuni') {
+            searchInput.placeholder = "Cerca comune (es. Milano, Assago...)";
+            provFilter.classList.remove('hidden'); // Mostra province
+        } else {
+            searchInput.placeholder = "Cerca ente (es. Polizia Stradale, Unione dei comuni...)";
+            provFilter.classList.add('hidden'); // Nascondi province
+        }
+
+        // Reset visualizzazione
+        document.getElementById('list-comuni').innerHTML = '';
+        document.getElementById('list-enti').innerHTML = '';
+        document.getElementById('welcome-screen').classList.remove('hidden');
+        document.getElementById('list-comuni').classList.add('hidden');
+        document.getElementById('list-enti').classList.add('hidden');
+        
+        // Pulisci input
+        searchInput.value = '';
+        if(tab === 'enti') provFilter.value = ''; 
+    }
+
+    function handleSearch() {
+        if (!rawData) return;
+
+        const query = document.getElementById('searchInput').value.toLowerCase().trim();
+        const prov = document.getElementById('provFilter').value;
+        const welcome = document.getElementById('welcome-screen');
+        const containerId = currentTab === 'comuni' ? 'list-comuni' : 'list-enti';
+        const container = document.getElementById(containerId);
+
+        // Mostra home se idle
+        if (query.length === 0 && prov === "") {
+            welcome.classList.remove('hidden');
+            container.classList.add('hidden');
+            return;
+        }
+
+        welcome.classList.add('hidden');
+        container.classList.remove('hidden');
+
+        let results = [];
+
+        if (currentTab === 'comuni') {
+            results = rawData.comuni.filter(c => {
+                const matchName = c.nome.toLowerCase().includes(query) || c.codice.toLowerCase().includes(query);
+                const matchProv = prov === "" || c.prov === prov;
+                return matchName && matchProv;
+            });
+        } else {
+            results = rawData.altri_enti.filter(e => {
+                return e.nome.toLowerCase().includes(query) || e.codice.toLowerCase().includes(query);
+            });
+        }
+
+        renderList(results, containerId, currentTab === 'enti');
+    }
+
+    function renderList(items, containerId, isOtherEntity) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+
+        if (items.length === 0) {
+            container.innerHTML = `<div style="text-align:center; padding:20px; color:#adb5bd;">Nessun risultato trovato.</div>`;
+            return;
+        }
+
+        // Limite rendering per performance
+        const limit = 100; 
+        const itemsToShow = items.slice(0, limit);
+
+        itemsToShow.forEach(item => {
+            const div = document.createElement('div');
+            
+            let cssClass = 'card';
+            if (isOtherEntity) cssClass += ' other-entity';
+            else cssClass += item.has_velox ? ' has-velox' : ' no-velox';
+            
+            div.className = cssClass;
+
+            // Badge logica
+            let badgeHtml = '';
+            if (item.count > 0) badgeHtml = `<span class="badge ${isOtherEntity ? 'bg-blue' : 'bg-red'}">${item.count} Rilevatori</span>`;
+            else badgeHtml = `<span class="badge bg-green">Nessun Rilevatore</span>`;
+
+            // Provincia tag
+            let provHtml = (item.prov && item.prov !== 'ND') ? `<span class="prov-tag">${item.prov}</span>` : '';
+
+            // Lista Velox
+            let listHtml = '';
+            if (item.velox && item.velox.length > 0) {
+                listHtml = `<ul class="velox-list">`;
+                item.velox.forEach(v => {
+                    let note = v.note ? `<span class="note-text">📍 ${v.note}</span>` : '';
+                    let decreto = v.decreto ? `<span style="margin-left:5px; color:#adb5bd">Decr. ${v.decreto}</span>` : '';
+                    
+                    listHtml += `
+                    <li class="velox-item">
+                        <span class="velox-model">${v.modello || 'Modello ND'} <span style="font-weight:400; font-size:0.9em">(${v.tipo})</span></span>
+                        <div class="velox-meta">${decreto}</div>
+                        ${note}
+                    </li>`;
+                });
+                listHtml += `</ul>`;
+            } else if (item.has_velox) {
+                 // Errore dati
+                 listHtml = `<div style="padding-top:10px; font-size:0.9em; color:#e74c3c">Dati dispositivi corrotti nel CSV.</div>`;
+            }
+
+            div.innerHTML = `
+                <div class="card-header">
+                    <div>
+                        <span class="city-name">${item.nome}</span> ${provHtml}
+                        <div style="font-size:0.75em; color:#adb5bd; margin-top:2px">Cod. Catastale: ${item.codice}</div>
+                    </div>
+                    ${badgeHtml}
+                </div>
+                ${listHtml}
+            `;
+            container.appendChild(div);
+        });
+
+        if (items.length > limit) {
+             const more = document.createElement('div');
+             more.style.textAlign = 'center';
+             more.style.padding = '10px';
+             more.style.color = '#adb5bd';
+             more.style.fontSize = '0.9rem';
+             more.innerText = `...e altri ${items.length - limit} risultati non mostrati (affina la ricerca).`;
+             container.appendChild(more);
+        }
+    }
+</script>
+
+</body>
+</html>
