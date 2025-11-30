@@ -39,13 +39,13 @@ Per utilizzare o sviluppare localmente:
 
 1. Clona il repository  
    ```bash
-   git clone https://github.com/realroti/autovelox.git ```
+   git clone https://github.com/realroti/autovelox.git
 2. Per caricare correttamente il json durante la visualizzazione del sito, consiglio di aprire l'HTML in localhost
    ```bash
-   python3 -m http.server ```
+   python3 -m http.server
 3. Per aggiornare i dati (ad esempio dopo nuovo CSV del MIT)
    ```bash
-   python3 -m http.server ```
+   python3 -m http.server
 
 Lo script prenderà il file csv, tradurrà i codici catastali in nomi di comuni e province (tramite la corrispondenza nel txt) e riordinerà tutto nel JSON, in modo che possa venire caricato dall'HTML.
 
